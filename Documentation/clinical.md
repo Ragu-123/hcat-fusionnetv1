@@ -2,14 +2,14 @@
 
 This document explains the functionality of two Python scripts:
 
-1. **`clinical_preproc_novel.py`** – Performs advanced preprocessing and imputation on clinical JSON data, then saves processed features and metadata to HDF5.
+1. **`clinical_pre.py`** – Performs advanced preprocessing and imputation on clinical JSON data, then saves processed features and metadata to HDF5.
 2. **`clinical_make_embedding_512.py`** – Generates 512-dimensional embeddings from preprocessed features using either a denoising autoencoder (AE, if PyTorch is available) or PCA.
 
 Both scripts are designed as part of a pipeline for **HANCOCK clinical data preprocessing and representation learning**.
 
 ---
 
-## 1. clinical\_preproc\_novel.py
+## 1. clinical\_preproc.py
 
 ### Purpose
 
