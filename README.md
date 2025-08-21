@@ -1,4 +1,4 @@
-# HCAT-FusionNet: A multimodal deep learning framework that fuses multiple datasets using variational autoencoders and cross-modal attention for holistic healthcare outcome prediction.
+# HCAT-FusionNet:  Multimodal Preprocessing and Fusion for Survival and Recurrence Prediction,using variational autoencoders and cross-modal attention for holistic healthcare outcome prediction.
 
 This repository contains preprocessing pipelines and training framework for the **HANCOCK (Head and Neck Cancer Cohort)** dataset used in the **Hancothon25 Challenge** at MICCAI 2025. The challenge focuses on predicting **5-year survival** and **2-year recurrence** using multimodal patient data (clinical, pathological, semantic text, spatial histopathology, temporal blood tests).
 
@@ -84,7 +84,7 @@ If you use this repository, please cite:
 ```
 @inproceedings{hcat_fusionnet_2025,
   title={HCAT-FusionNet: Multimodal Preprocessing and Fusion for Survival and Recurrence Prediction},
-  author={Ragunath R and contributors},
+  author={Ragunath R, Sanjay S, Harish G},
   booktitle={MICCAI Hancothon25 Challenge},
   year={2025}
 }
