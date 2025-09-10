@@ -355,7 +355,8 @@ def pipeline(histories_dir, reports_dir, surgery_dir, outdir, use_transformer=Fa
     obj = {
         "pids": pids,
         "per_modality_proj": {m: ("svd" if per_modality_proj[m] and per_modality_proj[m][0]=="svd" else "identity") for m in per_modality_proj},
-        "transformer_model": TRANSFORMER_MODEL if (use_transformer and TORCH) else None
+        "transformer_model": TRANSFORMER_MODEL if (use_transformer and TORCH) else None,
+        "projector_768_to_512": per_modality_proj["reports"][1] if per_modality_proj.get("reports") else None
     }
     joblib.dump(obj, Path(outdir) / "text_semantic_preproc_objects.joblib")
 
