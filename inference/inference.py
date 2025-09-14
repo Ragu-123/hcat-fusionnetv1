@@ -13,6 +13,14 @@ from preprocess.semantic_inference import get_semantic_embedding
 
 # Import your final, corrected model architecture which matches the trained .pt file
 from preprocess.hcat_model import EnhancedHCAT
+import warnings
+
+# Suppress the specific PyTorch UserWarning about nested tensors
+warnings.filterwarnings(
+    "ignore",
+    message="enable_nested_tensor is True, but self.use_nested_tensor is False because .*norm_first was True.*",
+    category=UserWarning,
+)
 
 # ===========================================================================
 # Global Configuration
@@ -21,10 +29,10 @@ from preprocess.hcat_model import EnhancedHCAT
 # You MUST set this correctly for each submission phase.
 #
 # For the Recurrence Task, use:
-PREDICTION_TARGET_SLUG = "2-year-recurrence-after-diagnosis"
+# PREDICTION_TARGET_SLUG = "2-year-recurrence-after-diagnosis"
 #
 # For the Survival Task, uncomment the following line and rebuild the container:
-# PREDICTION_TARGET_SLUG = "5-year-survival"
+PREDICTION_TARGET_SLUG = "5-year-survival"
 
 # Define the execution environment paths
 BASE_DIR = Path("inference.py").resolve().parent
