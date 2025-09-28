@@ -81,20 +81,7 @@ Our framework is designed for **precision oncology**, enabling predictive modeli
 * Clinical and semantic features boosted survival classification.
 * Fusion strategies with uncertainty modeling ensured robustness under missing modalities.
 
----
 
-## Citation
-
-If you use this repository, please cite:
-
-```
-@inproceedings{hcat_fusionnet_2025,
-  title={HCAT-FusionNet: Multimodal Preprocessing and Fusion for Survival and Recurrence Prediction},
-  author={Ragunath R, Sanjay S, Harish G},
-  booktitle={MICCAI Hancothon25 Challenge},
-  year={2025}
-}
-```
 
 ---
 
