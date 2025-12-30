@@ -4,7 +4,7 @@ This repository contains preprocessing pipelines and training framework for the 
 
 Our solution introduces **novel preprocessing, imputation, and fusion strategies** to extract robust 512-dimensional embeddings from heterogeneous modalities, followed by **advanced multi-modal training**.
 
-## Preprocessed_h5_files and Model Weights and triaining notebook
+## Preprocessed_h5_files and Model Weights and training notebook
 * **Huggingface**: [H5](https://huggingface.co/ragunath-ravi/hcat-fusionnet/tree/main/preprocessed_h5_files)
 * **HuggingFace**: [Model Weights](https://huggingface.co/ragunath-ravi/hcat-fusionnet/tree/main/model/hcat_checkpoints_v_improved)
 * **Colab**:[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1o1ocd7nmZTKeBwtO-7vbcWycf_K8bDYW?usp=sharing)
