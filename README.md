@@ -7,7 +7,9 @@ Our solution introduces **novel preprocessing, imputation, and fusion strategies
 ## Preprocessed_h5_files and Model Weights and training notebook
 * **Huggingface**: [H5](https://huggingface.co/ragunath-ravi/hcat-fusionnet/tree/main/preprocessed_h5_files)
 * **HuggingFace**: [Model Weights](https://huggingface.co/ragunath-ravi/hcat-fusionnet/tree/main/model/hcat_checkpoints_v_improved)
-* **Colab**:[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1o1ocd7nmZTKeBwtO-7vbcWycf_K8bDYW?usp=sharing)
+* **training Colab**:[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1o1ocd7nmZTKeBwtO-7vbcWycf_K8bDYW?usp=sharing)
+* * **inference Colab**:[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1nDfVkI7fWrshdpFMLxkBEBFmRU3ZrQb0?usp=sharing)
+
 
 ---
 
