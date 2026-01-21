@@ -28,6 +28,10 @@ from torch.utils.data import Dataset, DataLoader
 # sklearn metrics
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
 
+# plotting
+import matplotlib.pyplot as plt
+from lifelines import KaplanMeierFitter
+
 # ----------------------------
 # Utilities for HDF5 handling (unchanged)
 # ----------------------------
@@ -865,6 +869,177 @@ def compute_metrics(preds, targets):
         auc = 0.0
     return {"acc": acc, "f1": f1, "auc": auc}
 
+def generate_plots(args, model, val_loader, history, val_idx, ds):
+    print("Generating figures...")
+    os.makedirs(args.outdir, exist_ok=True)
+    # Switch to Agg backend to avoid display errors
+    plt.switch_backend('Agg')
+
+    device = next(model.parameters()).device
+
+    # Load best model for evaluation
+    best_model_path = os.path.join(args.outdir, "enhanced_hcat_best_avg.pt")
+    if os.path.exists(best_model_path):
+        print(f"Loading best model from {best_model_path} for plotting...")
+        try:
+            model.load_state_dict(torch.load(best_model_path, map_location=device))
+        except Exception as e:
+            print(f"Failed to load best model: {e}. Using current model.")
+    model.eval()
+
+    # Figure 3: Accuracy graph
+    try:
+        plt.figure(figsize=(10, 6))
+        epochs = range(1, len(history['train_loss']) + 1)
+        plt.plot(epochs, history['val_surv_f1'], label='Survival F1')
+        plt.plot(epochs, history['val_rec_f1'], label='Recurrence F1')
+        plt.plot(epochs, history['val_avg_f1'], label='Average F1')
+        plt.xlabel('Epochs')
+        plt.ylabel('F1 Score')
+        plt.title('Validation Accuracy/F1 over Epochs')
+        plt.legend()
+        plt.grid(True)
+        plt.savefig(os.path.join(args.outdir, 'figure3_accuracy_graph.png'))
+        plt.close()
+        print("Figure 3 saved.")
+    except Exception as e:
+        print(f"Failed to generate accuracy graph: {e}")
+
+    # Figure 1: Robustness (F1 vs % Missing Data)
+    print("Generating Robustness Graph...")
+    try:
+        rates = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5]
+        f1_scores = []
+
+        with torch.no_grad():
+            for r in rates:
+                all_preds = []
+                all_targets = []
+                for batch in val_loader:
+                    emb = batch["emb"].to(device)
+                    quality = batch["quality"].to(device)
+                    present = batch["present"].to(device)
+                    targets = batch["targets"].to(device)
+                    surv_t = targets[:, 0]
+                    surv_mask = (surv_t != -1)
+
+                    # Artificially drop modalities
+                    if r > 0:
+                        # Create a mask that drops modalities with probability r
+                        drop_mask = (torch.rand_like(present.float()) > r).int().to(device)
+                        present_aug = present * drop_mask
+                    else:
+                        present_aug = present
+
+                    out = model(emb, quality, present_aug, training=False)
+                    preds = torch.sigmoid(out["logit_surv"]).cpu().numpy()
+
+                    for i in range(len(surv_t)):
+                        if surv_mask[i]:
+                            all_preds.append(int(preds[i] >= 0.5))
+                            all_targets.append(int(surv_t[i].cpu().item()))
+
+                metrics = compute_metrics(all_preds, all_targets)
+                f1_scores.append(metrics['f1'])
+
+        plt.figure(figsize=(10, 6))
+        plt.plot([r * 100 for r in rates], f1_scores, marker='o')
+        plt.xlabel('% Missing Data')
+        plt.ylabel('F1 Score (Survival)')
+        plt.title('Robustness: F1 Score vs. % Missing Data')
+        plt.grid(True)
+        plt.savefig(os.path.join(args.outdir, 'figure1_robustness.png'))
+        plt.close()
+        print("Figure 1 saved.")
+    except Exception as e:
+        print(f"Failed to generate robustness graph: {e}")
+
+    # Figure 2: Kaplan-Meier
+    print("Generating Kaplan-Meier Curve...")
+    try:
+        # Need survival time and event
+        with h5py.File(args.clinical, 'r') as f:
+            # Look for time
+            time_key = None
+            for k in ["survival_months", "os_months", "time", "days_to_death", "survival_time", "months", "days"]:
+                if k in f:
+                    time_key = k
+                    break
+
+            # Look for event
+            event_key = None
+            censorship = False
+            for k in ["censorship", "event", "status", "vital_status", "os_status", "dead", "death"]:
+                 if k in f:
+                    event_key = k
+                    if "censor" in k:
+                        censorship = True
+                    break
+
+            if time_key and event_key:
+                times = np.array(f[time_key])
+                events = np.array(f[event_key])
+
+                # Filter for validation set
+                # val_idx refers to indices in ds, which match clin_pids order.
+                # Assuming dataset matches h5 arrays order.
+                val_times = times[val_idx]
+                val_events = events[val_idx]
+
+                # Handle censorship logic
+                # If key was 'censorship', assuming 1=censored, 0=dead. KM needs event observed (1=dead).
+                if censorship:
+                    val_events = 1 - val_events
+
+                # If time is in days (large values), convert to months
+                if np.nanmedian(val_times) > 100: # Heuristic
+                    val_times = val_times / 30.44
+
+                # Get model predictions for stratification
+                probs = []
+                with torch.no_grad():
+                    for batch in val_loader:
+                        emb = batch["emb"].to(device)
+                        quality = batch["quality"].to(device)
+                        present = batch["present"].to(device)
+                        out = model(emb, quality, present, training=False)
+                        p = torch.sigmoid(out["logit_surv"]).cpu().numpy()
+                        probs.extend(p)
+
+                probs = np.array(probs)
+
+                # Split into high/low risk
+                # p is P(Survival at 5yr). High p -> Good Prognosis -> Low Risk.
+                # Low p -> Bad Prognosis -> High Risk.
+                median_p = np.median(probs)
+                low_risk_mask = probs >= median_p
+                high_risk_mask = probs < median_p
+
+                kmf = KaplanMeierFitter()
+                plt.figure(figsize=(10, 6))
+
+                # Low Risk Group (High Survival Prob)
+                if np.any(low_risk_mask):
+                    kmf.fit(val_times[low_risk_mask], val_events[low_risk_mask], label="Low Risk (Predicted Survivor)")
+                    kmf.plot_survival_function()
+
+                # High Risk Group (Low Survival Prob)
+                if np.any(high_risk_mask):
+                    kmf.fit(val_times[high_risk_mask], val_events[high_risk_mask], label="High Risk (Predicted Non-Survivor)")
+                    kmf.plot_survival_function()
+
+                plt.title("Kaplan-Meier Curve")
+                plt.xlabel("Time (Months)")
+                plt.ylabel("Survival Probability")
+                plt.grid(True)
+                plt.savefig(os.path.join(args.outdir, 'figure2_kaplan_meier.png'))
+                plt.close()
+                print("Figure 2 saved.")
+            else:
+                print(f"Could not find survival time/event keys in {args.clinical}. Keys found: {list(f.keys())}")
+    except Exception as e:
+        print(f"Failed to generate Kaplan-Meier plot: {e}")
+
 # ----------------------------
 # Enhanced Training Loop
 # ----------------------------
@@ -1103,6 +1278,9 @@ def train(args):
         }
     }
     
+    # Generate Plots
+    generate_plots(args, model, val_loader, history, val_idx, ds)
+
     with open(os.path.join(args.outdir, "enhanced_hcat_training_summary.json"), "w") as wf:
         json.dump(summary, wf, indent=2)
     print("Enhanced training finished. Summary saved to:", os.path.join(args.outdir, "enhanced_hcat_training_summary.json"))
